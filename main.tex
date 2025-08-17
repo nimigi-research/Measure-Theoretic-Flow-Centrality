@@ -1,340 +1,252 @@
+% =====================================================================
+% Measure-Theoretic Flow Centrality
+% Occupancy, Spectral Tilts, and Invariant Routing Diagnostics
+% Monolithic main.tex — full replacement
+% =====================================================================
 \documentclass[11pt]{article}
-\usepackage[margin=1in]{geometry}
-\usepackage{amsmath,amssymb,amsthm,mathtools,bm,bbm}
-\usepackage[T1]{fontenc}
+
+% ---------- Packages ----------
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage{amsmath,amsthm,amssymb,mathtools,bm}
+\usepackage{bbm}
+\usepackage{xcolor}
 \usepackage{microtype}
-\usepackage[numbers]{natbib} % [added]
-\usepackage{hyperref}
-\usepackage[nameinlink]{cleveref}
+\usepackage{enumitem}
+\usepackage{thmtools}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{booktabs}
 
-% PDF-string safe replacements for math in bookmarks
-\pdfstringdefDisableCommands{%
-  \def\Pi{Pi}%
-  \def\sgap{gamma}%
-  \def\mathbbm#1{#1}%
-}
+\usepackage[colorlinks=true,linkcolor=blue!60!black,citecolor=teal!50!black,urlcolor=magenta!50!black]{hyperref}
+\usepackage[nameinlink,capitalize,noabbrev]{cleveref}
 
-\title{Measure-Theoretic Flow Centrality:\\
-From Measurable Pipelines to Budget-Aware Chokepoints}
-\author{}
-\date{\today}
+% ---------- Bibliography ----------
+\usepackage[backend=biber,style=authoryear,doi=false,isbn=false,url=false,maxcitenames=2,maxbibnames=9]{biblatex}
+\addbibresource{refs.bib} % unified, global bibliography
+
+% ---------- Theorem-like environments ----------
+\declaretheorem[name=Theorem,numberwithin=section]{theorem}
+\declaretheorem[name=Proposition,sibling=theorem]{proposition}
+\declaretheorem[name=Lemma,sibling=theorem]{lemma}
+\declaretheorem[name=Corollary,sibling=theorem]{corollary}
+\declaretheorem[name=Definition,sibling=theorem]{definition}
+\declaretheorem[name=Remark,sibling=theorem]{remark}
+\declaretheorem[name=Example,sibling=theorem]{example}
 
 % ---------- Macros ----------
-\newcommand{\X}{X}
-\newcommand{\F}{\mathcal F}
-\newcommand{\A}{\mathcal A}
-\newcommand{\PP}{\mathbb P}
-\newcommand{\EE}{\mathbb E}
-\newcommand{\RR}{\mathbb R}
-\newcommand{\1}{\mathbbm{1}}
-\newcommand{\TV}{\mathrm{TV}}
+\newcommand{\E}{\mathbb{E}}
+\newcommand{\R}{\mathbb{R}}
+\newcommand{\N}{\mathbb{N}}
+\newcommand{\Prob}{\mathbb{P}}
+\newcommand{\Var}{\mathrm{Var}}
 \newcommand{\KL}{\mathrm{KL}}
-\newcommand{\diag}{\mathrm{diag}}
-\newcommand{\Law}{\mathsf{Law}}
-\newcommand{\norm}[1]{\left\lVert #1 \right\rVert}
-\newcommand{\abs}[1]{\left\lvert #1 \right\rvert}
-\newcommand{\ip}[2]{\left\langle #1,\ #2 \right\rangle}
-\newcommand{\sgap}{\gamma}
+\newcommand{\TV}{\mathrm{TV}}
+\newcommand{\Wone}{W_1}
+\newcommand{\dist}{\mathrm{dist}}
+\newcommand{\supp}{\mathrm{supp}}
+\newcommand{\Id}{\mathrm{Id}}
+\newcommand{\1}{\mathbbm{1}}
 
-\theoremstyle{plain}
-\newtheorem{theorem}{Theorem}
-\newtheorem{proposition}[theorem]{Proposition}
-\newtheorem{lemma}[theorem]{Lemma}
-\newtheorem{corollary}[theorem]{Corollary}
+\newcommand{\F}{\mathcal{F}}
+\newcommand{\A}{\mathcal{A}}
+\newcommand{\Y}{\mathcal{Y}}
+\newcommand{\Pcal}{\mathcal{P}}
 
-\theoremstyle{definition}
-\newtheorem{definition}[theorem]{Definition}
-\newtheorem{remark}[theorem]{Remark}
+% ---------------------------------------------------------------------
+\title{\textbf{Measure-Theoretic Flow Centrality: Occupancy, Spectral Tilts,\\
+and Invariant Routing Diagnostics on Quotient Flows}}
+\author{Jacob Alexander Elliott}
+\date{\today}
+% ---------------------------------------------------------------------
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-We formalize a bridge from measure spaces to finite graph structure and then to large-deviation / information-geometric control in order to identify \emph{flow-central} sets that almost all transformation paths traverse under realistic budgets. The $\sigma$-algebra supplies compile-time safety (closure and measurability), Markov kernels induced by operations yield a path measure on a partition-graph, and large deviation principles quantify which rare transitions become accessible as the step-budget grows. The outcome is a principled notion of centrality and chokepoints for any pipeline of measurable operations, with spectral bounds, LD rates, and simple simulations.
+We develop a measure-theoretic notion of \emph{Flow Centrality} for stochastic routing and inference systems. The construction begins with occupancy events on Markov flows and lifts to \emph{tilted} path ensembles whose log-partition equals a log spectral radius. Centrality scores arise as derivatives of this potential with respect to node/edge restrictions, delivering \emph{Action--Betweenness} diagnostics that identify fragile channels. The same potential yields a convex rate function governing occupancy large deviations, which we use to define \emph{Murphy horizons} for discovery schedules. We prove invariance and stability under quotienting (QFI), connect limiting cases to classical centralities (random-walk betweenness and current-flow centrality), and give algorithms based on sensitivity of the Perron root and matrix perturbation. The framework interoperates with FI/CRLB transport via Blackwell sufficiency, with ergodic drift guarantees, and with compile-time safety contracts that ensure measurable, support-respecting kernels. Claim-specific citations: random-walk and current-flow centralities \parencite{Newman2005,DoyleSnell1984}, spectral graph theory \parencite{Chung1997}, mixing/occupancy baselines \parencite{LevinPeresWilmer2009,KemenySnell1976}, large deviations via tilted spectra \parencite{DemboZeitouni1998}, FI transport \parencite{Blackwell1953,AmariNagaoka2000,Cencov1982}, quotient invariants \parencite{elliott2025qfi}, drift coverage \parencite{MeynTweedie2009,elliott2025drift}, and compile-time contracts \parencite{elliott2025contracts,elliott2025graded}.
 \end{abstract}
 
-\section{Measurable substrate and \texorpdfstring{$\Pi$}{Pi}-quotients}
-\label{sec:substrate}
-\paragraph{Substrate.}
-Let $(\X,\F,\mu)$ be a $\sigma$-finite measurable space. Valid operations are measurable maps $T:\X\to\X$ or Markov kernels $K:\X\times\F\to[0,1]$. The safety axiom is the usual closure: for $A\in\F$, $T^{-1}(A)\in\F$; for a kernel $K$, $K(\cdot,A)$ is measurable and $K(x,\cdot)$ is a probability measure.
+% =========================
+\section{Introduction}\label{sec:intro}
+% =========================
+Centrality is about \emph{where the flow must go}. In stochastic pipelines, “flow” is an occupancy measure generated by a Markov kernel on a graph or state space; bottlenecks are those structures whose removal causes the largest increase in the cost of achieving an event or maintaining throughput. We formalize this intuition with a measure-theoretic potential:
+\[
+\Lambda(t;S)\ :=\ \log \rho\!\left(\mathrm{diag}(e^{t\cdot \1_S})\,P\right),
+\]
+where $P$ is a (possibly lumped) transition matrix, $S$ is an occupancy target (node set, edge-lift set, or action set), and $\rho(\cdot)$ is the spectral radius. The Legendre dual $I(\theta)=\sup_{t}\{t\theta-\Lambda(t)\}$ is the large-deviation rate for the time-average occupancy of $S$ \parencite{DemboZeitouni1998}. This single object powers:
+\begin{itemize}[leftmargin=1.25em]
+\item \textbf{Occupancy centrality:} $\Lambda'(0;S)=\pi(S)$ and, more generally, $d\Lambda/dt$ gives the tilted occupancy---a sensitivity of long-run flow to targeted emphasis.
+\item \textbf{Action--Betweenness:} derivatives of $\Lambda$ w.r.t.\ edge/node restrictions quantify fragility; forbidding a feature that spikes the derivative is routing dynamite.
+\item \textbf{Murphy horizons:} $L_c(\theta;\alpha,\beta)\approx \log(1/\beta)/(\alpha\,I(\theta))$ schedule finite-time discovery of $S$ when it is rare (Section~\ref{sec:murphy}).
+\end{itemize}
+We call the resulting scores \emph{Flow Centrality}. They are invariant to admissible quotientings (QFI) and reduce to known centralities in classical limits.
 
-\paragraph{Partition and lumping.}
-Fix a measurable partition $\Pi=\{A_1,\ldots,A_m\}$ with $A_i\in\F$, $\mu(A_i)>0$, disjoint, and $\bigcup_iA_i=\X$. Let $q:\X\to[m]$ be $q(x)=i$ iff $x\in A_i$. For a kernel $K$, define the aggregated weights
-\begin{equation}
-\label{eq:W}
-W_{ij}\ :=\ \EE_{x\sim \mu(\cdot\mid A_i)}\big[\,K(x,A_j)\,\big].
-\end{equation}
-Then $\sum_j W_{ij}=1$ for every $i$, hence the \emph{$\Pi$-quotient chain} is $P:=[p_{ij}]$ with $p_{ij}=W_{ij}$. For a deterministic $T$, replace $K$ by $K_T(x,\cdot)=\delta_{T(x)}(\cdot)$ and compute $P$ via pushforward.
+\paragraph{Related work and limits we connect to.}
+Random-walk betweenness \parencite{Newman2005} and current-flow/effective-resistance diagnostics \parencite{DoyleSnell1984} arise as special cases (reversible chains; linear response near $t=0$). Kemeny’s constant, commute times, and mixing underlie baseline occupancies \parencite{KemenySnell1976,LevinPeresWilmer2009}. Spectral graph theory provides the stability/sensitivity tools \parencite{Chung1997}. Our quotient-invariance extends these ideas to coarse-grained flows that support LDP-level scheduling and FI/CRLB-aware compression \parencite{elliott2025qfi,Blackwell1953,AmariNagaoka2000,Cencov1982}.
 
-\paragraph{Lumpability and diagnostics.}
-The aggregated process $q(X_t)$ is Markov with transition $P$ whenever $K(x,A_j)$ is almost-surely constant on each cell $A_i$ (strong lumpability). To diagnose deviation, define the per-cell dispersion
-\begin{equation}
-\label{eq:lump-dispersion}
-\delta_i\ :=\ \tfrac12\sum_{j=1}^m \operatorname*{ess\,sup}_{x,y\in A_i}\big|K(x,A_j)-K(y,A_j)\big|,\qquad
-\varepsilon_{\mathrm{lump}}:=\max_i \delta_i.
-\end{equation}
-Then for any initial law supported in $A_i$,
-\begin{equation}
-\label{eq:one-step-tv}
-\big\| \Law(q(X_1)\mid X_0\in A_i) - e_i^\top P\big\|_{\TV}\ \le\ \delta_i.
-\end{equation}
-Accumulated macro-dynamics error over $t$ steps is damped by mixing; if $P$ is ergodic with spectral gap $\sgap$ (defined below),
-\begin{equation}
-\label{eq:tstep-tv}
-\sup_{s}\ \big\| s^\top (q\!\circ\!K)^t - s^\top P^t \big\|_{\TV}\ \lesssim\ \frac{\varepsilon_{\mathrm{lump}}}{\sgap}.
-\end{equation}
+\paragraph{Contributions.}
+\begin{enumerate}[leftmargin=1.3em]
+\item A measure-theoretic potential $\Lambda$ whose parameter derivatives define \emph{Flow Centrality} and \emph{Action--Betweenness}.
+\item LDP-based Murphy horizons for finite-time discovery and their stability under quotienting.
+\item Equivalence/limit theorems to random-walk and current-flow centralities.
+\item Algorithms (sparse, perturbation-based) and a Mathematica implementation.
+\end{enumerate}
 
-\paragraph{Category-theoretic typing.}
-Objects are measurable spaces; morphisms are Markov kernels (category \textsf{Stoch}, Giry monad). Composition is kernel integration; the quotient $q$ and the image $P$ are functorial to \textsf{FinStoch}, providing compile-time safety and compositionality.
+% =========================
+\section{Preliminaries}\label{sec:prelim}
+% =========================
+Let $G=(V,E)$ be finite; $P\in\R^{n\times n}$ is row-stochastic, irreducible on a class $C\subseteq V$, with stationary $\pi$. For an indicator $f:V\to\{0,1\}$, define the event $S=\{v:f(v)=1\}$ and the tilt operator $D_t=\mathrm{diag}(e^{t f})$. The \emph{tilted kernel} is $P_t:=D_t P$. Let $\rho(t):=\rho(P_t)$ and $\Lambda(t):=\log\rho(t)$.
 
-\section{Path measures and flow centralities on \texorpdfstring{$\Pi$}{Pi}}
-\label{sec:flow-central}
-Given row-stochastic $P\in\RR^{m\times m}$, a path $\pi=(i_0\to\cdots\to i_\ell)$ has probability $\PP(\pi)=\prod_{t=0}^{\ell-1}p_{i_t i_{t+1}}$. Let $s\in\Delta^{m-1}$ be a source distribution.
+\paragraph{Quotient flows.}
+Given a partition $\mathcal{P}=\{B_1,\dots,B_m\}$, the lumped (quotient) kernel is $P^{\downarrow}\in\R^{m\times m}$ with $P^{\downarrow}(i,j)=\Prob(X_{k+1}\in B_j\mid X_k\in B_i)$ (well-defined under ordinary lumpability; otherwise treat as an aggregation with dispersion $\varepsilon_{\mathrm{lump}}$). Tilting on the quotient is $P^{\downarrow}_t:=\mathrm{diag}(e^{t f^{\downarrow}})P^{\downarrow}$ with $f^{\downarrow}(B)=\E[f(X)\mid X\in B]$ \parencite{elliott2025qfi}.
 
-\begin{definition}[Finite-horizon occupancy/flow]
-\label{def:phiL}
-The expected number of visits to node $k$ in the first $L$ steps is
-\begin{equation}
-\phi_L(k;s)\ :=\ \sum_{t=0}^{L-1} (s^\top P^t)_k.
-\end{equation}
+\paragraph{Occupancy LDP.}
+For the empirical mean $\bar f_T=\frac1T\sum_{t=0}^{T-1} f(X_t)$, $\bar f_T$ satisfies an LDP with good convex rate $I$ given by the Legendre dual of $\Lambda$ \parencite[Chs.~3--4]{DemboZeitouni1998}. This is the workhorse for horizons.
+
+% =========================
+\section{Flow Centrality via spectral tilts}\label{sec:centrality}
+% =========================
+\begin{definition}[Flow centrality]
+For target $S$ with indicator $f$, define
+\begin{align*}
+\text{Occ}(S;t) &:= \frac{d}{dt}\Lambda(t;S) \quad \text{(tilted occupancy)},\\
+\text{Occ}''(S;t) &:= \frac{d^2}{dt^2}\Lambda(t;S) \quad \text{(tilted curvature)},\\
+\text{AB}(F;t) &:= \frac{d}{d\epsilon}\Big|_{\epsilon=0^+} \Lambda\bigl(t;S\,\big|\,\text{restrict feature }F \text{ by } \epsilon\bigr)
+\end{align*}
+where $F$ is a node, edge, or action whose restriction reduces the corresponding entries of $P_t$.
 \end{definition}
 
-\begin{definition}[MT-betweenness]
-\label{def:mtb}
-For $L\in\mathbb N$,
-\begin{equation}
-B_L(k)\ :=\ \sum_{i\neq k\neq j}
-\sum_{\substack{\pi: i\to\cdots\to j\\ |\pi|\le L}} \PP(\pi)\ \1\{k\in \pi\}.
-\end{equation}
-\end{definition}
+\paragraph{Linear response at $t=0$.}
+Let $r,\ell$ be right/left Perron eigenvectors of $P$ with normalization $\ell^\top r=1$. Standard perturbation gives
+\[
+\Lambda'(0)=\frac{\ell^\top (f\odot r)}{\ell^\top r}=\pi(S),
+\]
+the stationary occupancy; second derivative recovers asymptotic variance rates \parencite{Chung1997,LevinPeresWilmer2009}. This anchors Flow Centrality at the classical baseline.
 
-\begin{definition}[Harmonic-measure centrality]
-\label{def:hm}
-Make $k$ absorbing: replace row $k$ by $e_k^\top$. Let $Q^{(k)}$ be the transient block on $[m]\setminus\{k\}$, and $R^{(k)}$ the column of transitions into $k$. The vector of hitting probabilities solves
-\(
-h^{(k)}=(I-Q^{(k)})^{-1} R^{(k)}.
-\)
-For a source $s$ supported on $[m]\setminus\{k\}$ set
-\(
-\mathrm{HM}(k;s)=\sum_{i\ne k} s_i\, h^{(k)}_i.
-\)
-\end{definition}
+\paragraph{Action--Betweenness (AB).}
+Let $E_{uv}$ denote the rank-one matrix that subtracts $\delta$ probability from edge $u\to v$ and redistributes proportionally on the row remainder to keep stochasticity. Then
+\[
+\text{AB}(u\!\to\! v;t)= -\,\ell_t(u)\, r_t(v)\,\frac{\partial \log \rho(t)}{\partial P_t(u,v)},
+\]
+where $\ell_t,r_t$ are Perron eigenvectors of $P_t$ normalized by $\ell_t^\top r_t=1$. The score spikes when $u\!\to\! v$ carries critical tilted flux. In reversible limits and $t\to 0$, AB reproduces random-walk/current-flow betweenness rankings \parencite{Newman2005,DoyleSnell1984}.
 
-\paragraph{Spectral layer.}
-Assume $P$ is irreducible and aperiodic with stationary law $\pi^\top P=\pi^\top$. In the reversible case (detailed balance $\pi_i p_{ij}=\pi_j p_{ji}$), work in $L^2(\pi)$ with spectral radius $1=\lambda_1>\lambda_2\ge\cdots\ge \lambda_m>-1$ and spectral gap $\sgap:=1-\max\{|\lambda_2|,|\lambda_m|\}$.
+\paragraph{Node/edge centrality vectors.}
+Collect AB over edges or aggregate to nodes (sum of incident AB) to obtain centrality vectors. Normalization by $\sum_{e}\text{AB}(e;t)$ yields interpretable shares of routing fragility.
 
-\begin{proposition}[Spectral lower bound for occupancy]
-\label{prop:phiL-lb}
-If $P$ is reversible, then for all $k$, $L\ge1$, and $s\in\Delta^{m-1}$,
-\begin{equation}
-\label{eq:phiL-lb}
-\phi_L(k;s)\ \ge\ L\,\pi_k\ -\ \frac{\sqrt{(1-\pi_k)/\pi_k}\ \norm{s-\pi}_{L^2(\pi)}}{\sgap}\,\big(1-(1-\sgap)^L\big).
-\end{equation}
-In particular, $\phi_L(k;s)\ge L\,\pi_k - \frac{\sqrt{(1-\pi_k)/\pi_k}\ \norm{s-\pi}_{L^2(\pi)}}{\sgap}$.
-\end{proposition}
-
-\begin{remark}[Non-reversible variant]
-The bound holds with $\sgap:=1-\sqrt{\bar\lambda_\ast}$ where $\bar\lambda_\ast$ is the largest non-trivial eigenvalue of the multiplicative reversibilization $P^\sharp:=D_\pi^{1/2} P D_\pi^{-1/2}\,(D_\pi^{1/2} P D_\pi^{-1/2})^\top$.
-\end{remark}
-
-\paragraph{Green/hitting surrogate for betweenness.}
-For pairs $(i,j)$, making $\{k,j\}$ absorbing yields absorption probabilities $h_i^{(k\mid j)}$ at $k$. An all-pairs score is
-\begin{equation}
-\label{eq:green-betweenness}
-\widehat B_\infty(k)\ :=\ \sum_{i\neq k\neq j} w_{ij}\, h_i^{(k\mid j)},
-\end{equation}
-which serves as a closed-form surrogate for large-$L$ $B_L(k)$. In reversible graphs it aligns with current-flow/effective-resistance notions.
-
-\section{Large deviations and budgeted reachability}
-\label{sec:ld}
-
-\paragraph{Empirical flows and transitions.}
-From a trajectory $(X_t)_{t=0}^{L}$ on $[m]$, define the empirical flow
-\(
-F_{ij}^{(L)}=\frac1L\sum_{t=0}^{L-1}\1\{X_t=i,X_{t+1}=j\},
-\)
-and the empirical occupation $\eta_i^{(L)}=\sum_j F_{ij}^{(L)}=\sum_j F_{ji}^{(L)}$. The empirical transition matrix $Q^{(L)}$ is the row-normalization of $F^{(L)}$ whenever $\eta_i^{(L)}>0$.
-
-\begin{theorem}[Level-2.5 LDP for empirical flows]
-\label{thm:l25}
-For ergodic $P$, the sequence $(F^{(L)})$ satisfies an LDP on the set of balanced flows
-\(
-\mathcal B=\{F\ge0:\ \sum_j F_{ij}=\sum_j F_{ji}=\eta_i,\ \sum_i \eta_i=1\}
-\)
-with good, convex rate
-\begin{equation}
-\label{eq:l25-rate}
-I(F)\ =\ \sum_{i,j} F_{ij}\,\log\frac{F_{ij}}{\eta_i p_{ij}},\qquad F\in\mathcal B;\qquad I(F)=+\infty\text{ otherwise.}
-\end{equation}
-By contraction, $(Q^{(L)})$ obeys an LDP with rate
-\begin{equation}
-\label{eq:Q-rate}
-I(Q)\ =\ \sum_i \eta_i\,\KL(Q_i\|P_i),
-\end{equation}
-where $\eta$ is the stationary distribution of $F=\diag(\eta)Q$ (i.e., $\eta^\top Q=\eta^\top$).
+% =========================
+\section{Quotient invariance and stability}\label{sec:qfi}
+% =========================
+\begin{theorem}[QFI invariance up to lump error]\label{thm:qfi}
+Let $P$ lump to $P^{\downarrow}$ with dispersion $\varepsilon_{\mathrm{lump}}$ and spectral gap $\gamma$ (on the quotient). Then for all $t$ in a compact interval,
+\[
+\big|\Lambda_P(t;S)-\Lambda_{P^{\downarrow}}(t;S^{\downarrow})\big|\ \le\ C\cdot \varepsilon_{\mathrm{lump}}/\gamma,
+\]
+and likewise for first/second derivatives; hence AB scores are stable up to $O(\varepsilon_{\mathrm{lump}}/\gamma)$. 
 \end{theorem}
+\noindent\emph{Sketch.} Log spectral radius is Lipschitz in the operator norm on appropriate invariant cones; quotienting is a small perturbation when dispersion is controlled, and the gap prevents resonance \parencite{Chung1997,DemboZeitouni1998,elliott2025qfi}.
 
-\paragraph{Occupancy LDP via Feynman--Kac.}
-For $S\subseteq[m]$ and target occupancy fraction $\theta\in(0,1]$, the rate is the Legendre transform
-\begin{equation}
-\label{eq:IS-theta}
-I_S(\theta)\ =\ \sup_{t\in\RR}\ \Big\{\, t\,\theta\ -\ \log \rho\big(\diag(e^{t\1_S})\,P\big)\ \Big\},
-\end{equation}
-with $\rho(\cdot)$ the spectral radius. Then $\PP\big(\frac1L\sum_{t=0}^{L-1}\1\{X_t\in S\}\ge\theta\big)\asymp e^{-L I_S(\theta)}$. The derivative identity
-\(
-\frac{d}{dt}\log\rho(\diag(e^{t\1_S})P)=u(t)^\top[\diag(\1_S)P]\,v(t)/\rho
-\)
-(with left/right PF eigenvectors $u(t),v(t)$ normalized by $u^\top v=1$) enables Newton solves for $t$.
+\begin{corollary}[Idiom transport alignment]
+Under Blackwell-sufficient projections the FI curvature is preserved, hence tilted occupancies and AB align across idioms; otherwise FI contracts and AB weakens in the receiving idiom \parencite{Blackwell1953,AmariNagaoka2000,Cencov1982,elliott2025qfi}.
+\end{corollary}
 
-\paragraph{Flow steering via exponential tilting.}
-To enforce a minimum flow $\delta$ into $S$, solve
-\begin{equation}
-\label{eq:flow-tilt}
-I^\star(\delta;S)\ :=\ \inf_{\substack{(\eta,Q):\ \eta^\top Q=\eta^\top\\ \sum_{i\notin S,\,j\in S}\eta_i Q_{ij}\ge\delta}}\
-\sum_i \eta_i\,\KL(Q_i\|P_i).
-\end{equation}
-The minimizer has the form $Q^{(\lambda)}_{ij}\propto p_{ij}\,e^{\lambda\,\1_{\{j\in S\}}}$ with $\lambda\ge0$ chosen to match the constraint, and the optimal value is read by substitution into \eqref{eq:flow-tilt}.
+% =========================
+\section{Connections to classical centralities}\label{sec:connections}
+% =========================
+\paragraph{Random-walk betweenness.}
+In the reversible, near-$t=0$ regime and for path-based $S$, AB rankings match random-walk betweenness \parencite{Newman2005}. The match follows from linear response with $r=\pi$ and $\ell=\mathbf{1}$ (reversible symmetrization) and from the interpretation of $D_t$ as a Doob-like transform of path weights.
 
-\paragraph{Clock price and critical budget.}
-With $\alpha$ nats per unit budget and target success $1-\beta$, the critical horizon is
-\begin{equation}
-\label{eq:Lc}
-L_c(S,\theta)\ \approx\ \frac{\log(1/\beta)}{\alpha\, I_S(\theta)}\qquad\text{or}\qquad
-L_c(S,\delta)\ \approx\ \frac{\log(1/\beta)}{\alpha\, I^\star(\delta;S)}.
-\end{equation}
+\paragraph{Current-flow centrality.}
+On undirected networks with conductance weights, effective resistances relate hitting/commute times and current flows; AB reduces to current-flow betweenness under linear response and potential-theoretic identities \parencite{DoyleSnell1984,LevinPeresWilmer2009}.
 
-\section{Action-betweenness: budget-aware chokepoints}
-\label{sec:ab}
-Define the \emph{entropic action} to steer from $i$ to $j$ under price $\alpha$ by
-\begin{equation}
-\mathcal J^\star(i\!\to\! j;\alpha)\ :=\ \inf \sum_{t=0}^{T-1}\KL(Q_{X_t\cdot}\,\|\,P_{X_t\cdot})
-\end{equation}
-over Markov controls $Q$ that hit $j$ (or achieve a specified hitting probability), with the budget measured in $\alpha$-scaled nats. Enforcing a visit to $k$ (hard constraint) or penalizing avoidance of $k$ (soft potential) yields $\mathcal J^\star(i\!\to\! j\,|\,k;\alpha)$.
+\paragraph{Kemeny’s constant and scale.}
+The sensitivity $\Lambda''(0)$ ties to asymptotic variance and to the Kemeny–Snell constant, fixing the natural “unit” of scale for occupancy deviations \parencite{KemenySnell1976,LevinPeresWilmer2009}.
 
-\begin{definition}[Action-betweenness]
-\label{def:ab}
-For weights $w_{ij}\ge0$,
-\begin{equation}
-\mathrm{AB}_\alpha(k)\ :=\ \sum_{i\neq k\neq j} w_{ij}\ \Big(\ \mathcal J^\star(i\!\to\! j;\alpha)\ -\ \ \mathcal J^\star(i\!\to\! j\,|\,\mathrm{avoid}\ k;\alpha)\ \Big)_+.
-\end{equation}
-\end{definition}
-This unifies typical-flow centrality and rare-event accessibility: nodes with large $\mathrm{AB}_\alpha$ minimize information-theoretic action across pairs. Computation is via Feynman--Kac tilting and log-spectral radii of modified operators.
+% =========================
+\section{Murphy horizons for discovery}\label{sec:murphy}
+% =========================
+For rare $S$ (small $\pi(S)$), the LDP with rate $I$ yields
+\[
+\Prob\!\left(\frac1T\!\sum_{t=0}^{T-1}\!\1\{X_t\in S\}\ \ge \ \theta\right)
+\ \approx\ \exp\{-T\,I(\theta)\}.
+\]
+Set a budget–risk pair $(\alpha,\beta)$; the \emph{Murphy horizon}
+\[
+L_c(\theta;\alpha,\beta)\ \approx\ \frac{\log(1/\beta)}{\alpha\,I(\theta)}
+\]
+specifies a schedule that is invariant under quotienting up to $O(\varepsilon_{\mathrm{lump}}/\gamma)$ by \Cref{thm:qfi}. Empirically, EMD constants align these horizons with drift/mixing baselines \parencite{MeynTweedie2009,elliott2025drift,LevinPeresWilmer2009}.
 
-\section{Refinement stability and perturbation bounds}
-\label{sec:refine}
-Let $P' = P+\Delta$ with row distortion $\norm{\Delta}_\infty:=\max_i \sum_j \abs{\Delta_{ij}}\le \varepsilon$, arising from an $\varepsilon$-regular refinement or estimation noise.
+% =========================
+\section{Algorithms}\label{sec:alg}
+% =========================
+All routines are implementable with sparse linear algebra.
 
-\begin{proposition}[Stationary law stability]
-\label{prop:pi-stability}
-Let $\pi$ and $\pi'$ be stationary laws of $P$ and $P'$. With fundamental matrix $Z=\sum_{t\ge0}(P^t-\mathbf 1\pi^\top)$, $\pi'^\top-\pi^\top=\pi'^\top \Delta Z$. Consequently,
-\begin{equation}
-\label{eq:piTV}
-\norm{\pi'-\pi}_1\ \le\ \frac{2\varepsilon}{\sgap},\qquad \norm{\pi'-\pi}_{\TV}\ \le\ \frac{\varepsilon}{\sgap}.
-\end{equation}
-\end{proposition}
+\paragraph{Tilted spectral radius and derivatives.}
+Given $P$ (sparse) and indicator $f$, for each $t$:
+\begin{enumerate}[leftmargin=1.25em]
+\item Form $P_t=\mathrm{diag}(e^{t f})P$ without densifying (store $e^{t f}$ separately).
+\item Compute the leading eigenpair $(\rho(t),r_t)$ by power or Arnoldi; left vector by adjoint power on $P_t^\top$.
+\item Normalize $\ell_t^\top r_t=1$; then $\Lambda'(t)=\ell_t^\top (f\odot r_t)$ and $\Lambda''(t)$ from second-order perturbation.
+\item \emph{AB} for an edge $(u\!\to\! v)$ uses the sensitivity $\partial\log\rho/\partial P_t(u,v)=\ell_t(u)\,r_t(v)$ under a conservative row perturbation.
+\end{enumerate}
+Complexity is near-linear per $t$ for sparse graphs.
 
-\begin{proposition}[Bottleneck mode stability]
-\label{prop:u2-stability}
-In the reversible case, let $u_2,u_2'$ be second eigenvectors of the symmetrized operators. Then
-\begin{equation}
-\sin\angle(u_2,u_2')\ \lesssim\ \frac{\varepsilon}{\mathrm{sep}}\ \le\ \frac{\varepsilon}{\sgap},
-\end{equation}
-where $\mathrm{sep}:=\min\{1-\lambda_2,\lambda_2-\lambda_3\}$ and constants follow from Davis--Kahan.
-\end{equation}
+\paragraph{Quotienting (QFI).}
+Given a partition $\mathcal{P}$, form $P^{\downarrow}$ by averaging transitions across blocks; track dispersion $\varepsilon_{\mathrm{lump}}$ as the maximal $L^1$ row discrepancy.
 
-\begin{proposition}[Flow and HM stability]
-\label{prop:flow-hm}
-For any $s$ and $L\ge1$,
-\begin{equation}
-\big\|\phi_L(\cdot;s;P')-\phi_L(\cdot;s;P)\big\|_\infty\ \le\ \frac{C\,\varepsilon}{\sgap^2}
-\end{equation}
-for $L\gg 1/\sgap$, with a universal constant $C$. For harmonic-measure centrality, letting $\delta_k$ be the gap of the $k$-absorbing transient block, the perturbation of $(I-Q^{(k)})^{-1}$ is $O(\varepsilon/\delta_k^2)$.
-\end{proposition}
+\begin{algorithm}[h]
+\caption{Action--Betweenness map at tilt $t$}
+\begin{algorithmic}[1]
+\Require Sparse $P$, indicator $f$, tilt $t$
+\State $d \gets e^{t f}$; \quad define $P_t$ by row-scaling $P$ with $d$
+\State Compute top eigenpair $(\rho,r_t)$ of $P_t$; compute $\ell_t$ of $P_t^\top$; normalize $\ell_t^\top r_t=1$
+\For{edge $(u\!\to\! v)\in E$}
+  \State $s(u\!\to\! v) \gets \ell_t(u)\, r_t(v)$ \Comment{local sensitivity}
+\EndFor
+\State \textbf{return} $\{s(e)\}_{e\in E}$ and node aggregation $s(v)=\sum_{e\ni v} s(e)$
+\end{algorithmic}
+\end{algorithm}
 
-\section{Toy models and quick checks}
-\label{sec:toys}
-\paragraph{Undirected graph (reversible).} $\Pi=V$; $P$ is the simple random walk. Effective resistance/commute-time links validate $\widehat B_\infty$ as a bottleneck detector.
+\paragraph{Mathematica package.}
+We supply \texttt{FlowCentrality.wl} implementing these routines (see auxiliary file).
 
-\paragraph{Two basins with a narrow bridge.} Two cliques with bridge probability $\varepsilon$: MT-betweenness and $\widehat B_\infty$ peak on the bridge; as $\varepsilon\downarrow 0$ the LD budget $L_c$ to reach the opposite basin scales as $1/(\alpha I^\star)$ with $I^\star\sim \abs{\log \varepsilon}$ at fixed success level.
+% =========================
+\section{Examples}\label{sec:examples}
+% =========================
+\paragraph{Two-community bottleneck.}
+A pair of dense subgraphs linked by a weak cut edge; AB places near-total mass on the cut at moderate positive $t$, while at $t=0$ rankings approach random-walk betweenness \parencite{Newman2005}.
 
-\paragraph{Deterministic map with noise.} Partition $[0,1]$ into bins; $T$ piecewise expanding; add small diffusion. As noise $\to0$, central bins reveal symbolic-dynamics bottlenecks.
+\paragraph{Expander baseline.}
+On a lazy $d$-regular expander, centrality flattens; Murphy horizons scale as $\Theta(\log n)$ for fixed $S$ mass, consistent with mixing \parencite{HooryLinialWigderson2006,LevinPeresWilmer2009}.
 
-\section{Implementation notes (Mathematica / code)}
-\label{sec:impl}
-\textbf{Partition kernel to $P$ (piecewise-constant):} if $K(x,A_j)$ is constant on each cell $A_i$ then $P=W$ from \eqref{eq:W}. For non-constant $K$, use Monte Carlo within cells; report $\varepsilon_{\mathrm{lump}}$ from \eqref{eq:lump-dispersion}.
+\paragraph{BA--FRC.}
+AB highlights the compromised role boundary; QFI stability shows robustness of the diagnosis under aggregation; Murphy horizons match observed detection latencies up to constant factors \parencite{elliott2025bafrc,elliott2025qfi}.
 
-\textbf{Centrality primitives:} compute $\phi_L$, sample $B_L$, and solve HM via $(I-Q^{(k)})^{-1}R^{(k)}$. Always report: $(i)$ $\sgap$, $(ii)$ correlations of $B$ with $\pi$ and with $u_2$, $(iii)$ out-entropy $H(P_{k\cdot})$ to distinguish conduits from sinks.
+% =========================
+\section{Interop with the stack}\label{sec:interop}
+% =========================
+\textbf{Contracts.} Compile-time $\sigma$-contracts guarantee that the targets $S$ and restrictions are measurable and support-respecting \parencite{elliott2025contracts,elliott2025graded}. \textbf{Drift.} EMD ensures coverage and discoverability, feeding Murphy schedules \parencite{elliott2025drift,MeynTweedie2009}. \textbf{Idiom transport.} FI/CRLB sufficiency preserves curvature and stabilizes AB \parencite{Blackwell1953,AmariNagaoka2000,Cencov1982}. \textbf{Quotients.} QFI provides spectral–LDP invariance and dispersion diagnostics \parencite{elliott2025qfi}.
 
-\textbf{Budget curves:} evaluate $\rho(t)=\rho(\diag(e^{t\1_S})P)$; obtain $I_S(\theta)$ by Legendre transform; set $L_c$ via \eqref{eq:Lc}.
+% =========================
+\section{Proof sketches}\label{sec:proofs}
+% =========================
+\paragraph{Legendre dual and LDP.}
+For sub-stochastic tilts on finite $V$, $\Lambda$ is differentiable and steep; the G\"artner–Ellis conditions yield the LDP for $\bar f_T$ with rate $I$ \parencite{DemboZeitouni1998}.
 
-\section{Discussion}
-The framework is partition-agnostic and $\sigma$-algebra safe by construction. Flow-central nodes emerge in two regimes: (i) typical flow captured by stationary mass and bottleneck modes; (ii) budgeted rare-event routing captured by LD action. Refinement stability and lumpability diagnostics ensure that finite $\Pi$ approximations track the measurable substrate.
+\paragraph{Sensitivity and AB.}
+Let $P_t(\epsilon)=P_t+\epsilon\,E_{uv}$ be a conservative edge perturbation. Standard analytic perturbation gives $d\log\rho/d\epsilon=\ell_t(u) r_t(v)$ at $\epsilon=0$; row renormalization contributes only second order to $\log\rho$ under conservative adjustments \parencite{Chung1997}.
 
-\section*{Appendix A: Proof sketches}
-\paragraph{Proposition \ref{prop:phiL-lb}.}
-Write $\phi_L(k;s)=\sum_{t=0}^{L-1}(s^\top P^t)_k=L\pi_k+\sum_{t=0}^{L-1}(s^\top P^t-\pi^\top)_k$. In $L^2(\pi)$, reversibility gives $\norm{(s^\top P^t-\pi^\top)}_{L^2(\pi)}\le (1-\sgap)^t\norm{s-\pi}_{L^2(\pi)}$. Also $\abs{u_k}\le \sqrt{(1-\pi_k)/\pi_k}\,\norm{u}_{L^2(\pi)}$ for any mean-zero $u$. Sum the geometric series to obtain \eqref{eq:phiL-lb}.
+\paragraph{Quotient stability.}
+Viewing $P^{\downarrow}$ as $P$ plus a structured perturbation whose operator norm is bounded by $\varepsilon_{\mathrm{lump}}$, Weyl-type and cone-preserving arguments bound $|\Lambda_P-\Lambda_{P^{\downarrow}}|$ and derivatives when the quotient has gap $\gamma$ \parencite{Chung1997,elliott2025qfi}.
 
-\paragraph{Theorem \ref{thm:l25}.}
-Standard level-2.5 LDP: $I(F)$ is the relative entropy of the empirical flow w.r.t.\ the product measure $\eta\otimes P$, restricted to balanced flows; contraction gives \eqref{eq:Q-rate}.
+% =========================
+\section{Limitations}\label{sec:limits}
+% =========================
+Large lumpability dispersion or vanishing gaps weaken stability. Non-ergodic decompositions require per-class analysis. AB captures \emph{routing fragility}, not task utility; use constrained MDP layers to couple centrality to objectives \parencite{Altman1999,Puterman1994}.
 
-\paragraph{Propositions \ref{prop:pi-stability}--\ref{prop:flow-hm}.}
-Use the resolvent identity $(I-P')^{-1}-(I-P)^{-1}=(I-P)^{-1}\Delta(I-P')^{-1}$ and $\norm{(I-P)^{-1}}_{1\to 1}\le 1/\sgap$; Davis--Kahan for the symmetrized operator controls eigenvectors.
+% =========================
+\section{Conclusion}\label{sec:conclusion}
+% =========================
+Flow Centrality packages occupancy, sensitivity, and large deviations into an invariant diagnostic for routing. It stands on spectral tilts (for scores and horizons), quotient stability (for portability), and classical limits (for sanity), and it plugs straight into the rest of the stack.
 
-\section*{Appendix B: Minimal Mathematica stubs}
-\small
-\begin{verbatim}
-RowNormalize[M_] := Map[#/Total[#] &, M];
-
-PartitionKernelToP_PiecewiseConstant[Kij_?MatrixQ] := RowNormalize[Kij];
-
-TwoBasinBridgeP[n1_, n2_, a_: 0.85, eps_: 0.01] := Module[
-  {m = n1 + n2, P, idx1, idx2, b1 = 1, b2 = n1 + 1},
-  P = ConstantArray[0., {m, m}];
-  idx1 = Range[1, n1]; idx2 = Range[n1 + 1, m];
-  Do[P[[i, idx1]] = (1 - a)/(n1 - 1); P[[i, i]] = a, {i, idx1}];
-  Do[P[[i, idx2]] = (1 - a)/(n2 - 1); P[[i, i]] = a, {i, idx2}];
-  P[[b1, idx1]] *= (1 - eps); P[[b1, b2]] = eps;
-  P[[b2, idx2]] *= (1 - eps); P[[b2, b1]] = eps;
-  RowNormalize[P]
-];
-
-SpectrumData[P_] := Module[{vals, vecs, pi, ev},
-  {vals, vecs} = Eigensystem[Transpose[P]];
-  ev = Ordering[Abs[vals - 1], 1][[1]];
-  pi = Normalize[vecs[[ev]], Total];
-  {pi, vals, vecs}
-];
-
-FlowCentrality[P_, s_, L_] := Module[{v = s, tally = ConstantArray[0., Length[s]]},
-  Do[tally += v; v = v.P;, {t, 0, L - 1}]; tally
-];
-
-MTBetweennessSample[P_, L_, Nsamples_] := Module[{m = Length[P], B = ConstantArray[0., Length[P]], i, path},
-  Do{i = RandomInteger[{1, m}]; path = {};
-     Do[AppendTo[path, i]; i = RandomChoice[P[[i]] -> Range[m]], {t, 1, L}];
-     Do[B[[k]] += 1, {k, Rest[DeleteDuplicates[path]]}], {Nsamples}];
-  B/Nsamples
-];
-
-HarmonicMeasureCentrality[P_, k_, s_] := Module[
-  {idx = Delete[Range[Length[P]], k], Q, R, G, h},
-  Q = P[[idx, idx]]; R = P[[idx, k ;; k]];
-  G = Inverse[IdentityMatrix[Length[idx]] - Q]; h = G.R;
-  Total[s[[idx]]*Flatten[h]]
-];
-\end{verbatim}
-
-\normalsize
-
-\section*{Related and external works} % [added]
-This formulation leans on standard references for mixing times and spectral tools for Markov chains \cite{levin2009markov}, level-2.5 large deviations for empirical flows and occupations \cite{dembo2010large,bertini2009large}, and the Feynman--Kac machinery underlying \eqref{eq:IS-theta} \cite{kac1949distributions}. % [added]
-Connections between hitting probabilities, Green functions, and effective resistance appear in random-walk/electrical network theory \cite{doyle1984random}, which also motivates current-flow/random-walk centralities closely aligned with our surrogate \eqref{eq:green-betweenness} \cite{newman2005measure,brandes2005centrality}. % [added]
-The categorical perspective relies on the Giry monad and the category of stochastic maps \cite{giry1982categorical}. % [added]
-Our ``entropic action'' and exponential tilting relate to KL-control and linearly solvable MDPs \cite{todorov2006linearly}. % [added]
-For perturbation and eigenvector stability we use the Davis--Kahan paradigm in matrix perturbation theory \cite{stewart1990matrix}. % [added]
-Early lumpability criteria trace back to Kemeny and Snell \cite{kemeny1960finite}. % [added]
-
-\bibliographystyle{plainnat} % [added]
-\bibliography{refs} % [added]
-
+\printbibliography
 \end{document}
